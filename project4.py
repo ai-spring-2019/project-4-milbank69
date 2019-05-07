@@ -1,6 +1,6 @@
 """
-PLEASE DOCUMENT HERE
-
+Nick Chkonia
+Date:
 Usage: python3 project3.py DATASET.csv
 """
 
@@ -80,7 +80,116 @@ def accuracy(nn, pairs):
 ################################################################################
 ### Neural Network code goes here
 
+# NOTE: need to know edges and their weights: which nodes are connected and to what degree
+class Node:
+    """ each node/unit in the neural network"""
 
+    def __init__(self,index,layer,inputs):
+        # init with unique identifiers
+        self.inputsVector = inputs
+        self.index = index
+        self.layer = layer
+        self.output = self.generate_output()
+
+    def generate_output(self):
+        pass
+
+
+class NeuralNetwork:
+    """Neural Network Class"""
+    def __init__(self, networkParamsVector):
+        """
+        - networkParamsVector: [<#inputLayerNodes>, ..., <#outputLayerNodes>]
+        where "..." contains the number of hidden layer nodes, as many times as
+        many times as there are hidden layers
+        """
+        self.numHiddenLayers = len(networkParamsVector) - 2
+        self.numNodes = self.count_nodes(networkParamsVector)
+        self.adj_matrix = []
+        self.generate_adj_matrix(networkParamsVector)
+
+
+    def count_nodes(self,nodesVector):
+        """ calculates the total number of nodes"""
+        totalNodes = 0
+        for i in range(len(nodesVector)):
+            totalNodes+=nodesVector[i]
+        return totalNodes
+
+
+    def generate_weights(self, numberWeights):
+        """ a nice helper for generating a weightvector of a given size"""
+        weightsVector = []
+        for _ in range(numberWeights):
+            weightsVector.append(random.random())
+        return weightsVector
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#   NOTE: How can I use the layer number and the size of each layer to inform
+          # me of which index I am starting inside of the adjacency matrix?
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def generate_connections(self, layer_i, layer_j):
+        """ Helper for generate_adj_matrix:
+            - mark connections between layers on self.adj_matrix
+        """
+        print("generate_connections")
+        print(layer_i, layer_j)
+        print(self.adj_matrix)
+        numConnections = layer_i * layer_j
+        # tricky indexing, needed for appropriate adjacency marking
+        offset = layer_i
+
+        randomWeights = self.generate_weights(numConnections)
+        print("randomWeights: ", randomWeights)
+        print("numConnections: ", numConnections)
+
+        for i in range(layer_i):
+            for j in range(layer_j):
+                self.adj_matrix[i][offset+j] = randomWeights[j]
+        print("after connecting:", self.adj_matrix)
+        print("\n")
+
+        # for row in range(layer_i):
+            # self.adj_matrix[row].append(randomWeights[row])
+
+    def generate_adj_matrix(self, networkParams):
+        """ generates the network graph, as an adjacency matrix
+            - iterate pair-wise through networkParamsVector,
+            generating connections
+        """
+        # build-up empty rows
+        for i in range(self.numNodes):
+            self.adj_matrix.append([])
+            for _ in range(self.numNodes):
+                self.adj_matrix[i].append(0)
+
+        # populate the matrix
+        for layer in range(len(networkParams)-1):
+            self.generate_connections(networkParams[layer],
+                                            networkParams[layer+1])
+        print("final adjacency matrix: \n", self.adj_matrix)
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+    def forward_propagate(self, input):
+        """ forward propagate through the network. on some input"""
+        pass
+
+
+    def back_propagation_learning(self,examples):
+        """ back propagate to learn the weights"""
+        pass
+
+
+    def cross_validation(self):
+        """ cross-validation to predict accuracy"""
+        pass
+
+
+
+### Neural Network code ends here
+################################################################################
 
 
 
@@ -96,9 +205,13 @@ def main():
     for example in training:
         print(example)
 
+    print("\n")
+
+
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
     # nn = NeuralNetwork([3, 6, 3])
+    nn = NeuralNetwork([2,2,1])
     # nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
