@@ -82,6 +82,9 @@ def accuracy(nn, pairs):
 
 
 class Layer:
+    """an abstracted array for storing which nodes are in which layer:
+        makes code much more readable, as otherwise it would be a giant,
+        spaghetti dish of array indexing"""
 
     def __init__(self, layerNumber, numNodes, startIndex):
         self.layer = layerNumber
@@ -90,9 +93,7 @@ class Layer:
 
 
     def populate_layer(self, numNodes, startIndex):
-        """
-            populate the nodes array
-        """
+        """ populate the nodes array """
         for i in range(startIndex, numNodes + startIndex):
             self.nodes.append(i)
 
@@ -123,6 +124,7 @@ class NeuralNetwork:
         self.numHiddenLayers = len(networkParamsVector) - 2
         self.numNodes = self.count_nodes(networkParamsVector)
         self.adj_matrix = []
+        self.layers = []    #will store Layer class objects
         self.generate_adj_matrix(networkParamsVector)
 
 
@@ -151,29 +153,50 @@ class NeuralNetwork:
 # NOTE: add dummy nodes for each layer: same weight randomization and changing
 #       during back-propagation; don't get foward-propagated
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    def generate_connections(self, layer_i, layer_j):
-        """ Helper for generate_adj_matrix:
-            - mark connections between layers on self.adj_matrix
-        """
-        print("generate_connections")
-        print(layer_i, layer_j)
-        print(self.adj_matrix)
-        numConnections = layer_i * layer_j
-        # tricky indexing, needed for appropriate adjacency marking
-        offset = layer_i
-
-        randomWeights = self.generate_weights(numConnections)
-        print("randomWeights: ", randomWeights)
-        print("numConnections: ", numConnections)
-
-        for i in range(layer_i):
-            for j in range(layer_j):
-                self.adj_matrix[i][offset+j] = randomWeights[j]
-        print("after connecting:", self.adj_matrix)
-        print("\n")
+    # def generate_connections(self, layer_i, layer_j):
+    #     """ Helper for generate_adj_matrix:
+    #         - mark connections between layers on self.adj_matrix
+    #     """
+    #     print("generate_connections")
+    #     print(layer_i, layer_j)
+    #     print(self.adj_matrix)
+    #     numConnections = layer_i * layer_j
+    #     # tricky indexing, needed for appropriate adjacency marking
+    #     offset = layer_i
+    #
+    #     randomWeights = self.generate_weights(numConnections)
+    #     print("randomWeights: ", randomWeights)
+    #     print("numConnections: ", numConnections)
+    #
+    #     for i in range(layer_i):
+    #         for j in range(layer_j):
+    #             self.adj_matrix[i][offset+j] = randomWeights[j]
+    #     print("after connecting:", self.adj_matrix)
+    #     print("\n")
 
         # for row in range(layer_i):
             # self.adj_matrix[row].append(randomWeights[row])
+
+    def generate_connections(self, layer_i, layer_j):
+        """ Helper for generate_adj_matrix:
+            - mark edges and their weights between nodes in self.adj_matrix
+            IN: Layer class objects consecutive/adjacent in the neural network
+        """
+        # print("\ngenerating connections ...")
+        # print(layer_i.nodes, layer_j.nodes)
+        # print(self.adj_matrix[0])
+        i_nodes = layer_i.nodes
+        j_nodes = layer_j.nodes
+        numConnections = len(i_nodes) * len(j_nodes)
+        randomWeights = self.generate_weights(numConnections)
+        # build those connections
+        for i in range(len(i_nodes)):
+            node_from = i_nodes[i]
+            for j in range(len(j_nodes)):
+                node_to = j_nodes[j]
+                thisWeight = randomWeights[j]
+                self.adj_matrix[node_from][node_to] = thisWeight
+
 
     def generate_adj_matrix(self, networkParams):
         """ generates the network graph, as an adjacency matrix
@@ -186,20 +209,31 @@ class NeuralNetwork:
             for _ in range(self.numNodes):
                 self.adj_matrix[i].append(0)
 
-        # populate the matrix
+
+
+        # build up layers to know which nodes connect to which
         startIndex = 0
         print("params:", networkParams)
         for layer in range(len(networkParams)):
             print(layer, startIndex)
             thisLayer = Layer(layer, networkParams[layer], startIndex)
+            self.layers.append(thisLayer)
             startIndex += networkParams[layer]
             print("thisLayer:", thisLayer.nodes)
 
+        #build up the adjacency matrix:
+        for layer in range(len(networkParams)-1):
+            self.generate_connections(self.layers[layer], self.layers[layer+1])
+
+
+
+        # for i in range(len(self.layers)):
+        #     print(self.layers[i].nodes)
 
         # for layer in range(len(networkParams)-1):
         #     # self.generate_connections(networkParams[layer],
         #                                     networkParams[layer+1])
-        print("final adjacency matrix: \n", self.adj_matrix)
+        print("final adjacency matrix with length {}: \n".format(len(self.adj_matrix)), self.adj_matrix)
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -243,8 +277,10 @@ def main():
 
     ### I expect the running of your program will work something like this;
     ### this is not mandatory and you could have something else below entirely.
-    nn = NeuralNetwork([3, 6, 3])
-    # nn = NeuralNetwork([2,2,1])
+    # nn = NeuralNetwork([3, 6, 3])
+    nn = NeuralNetwork([2,2,1])
+    # nn = NeuralNetwork([2,2,2])
+
     # nn.back_propagation_learning(training)
 
 if __name__ == "__main__":
