@@ -86,21 +86,28 @@ class Layer:
         makes code much more readable, as otherwise it would be a giant,
         spaghetti dish of array indexing"""
 
-    def __init__(self, layerNumber, numNodes, startIndex):
+    def __init__(self, layerNumber, numNodes, startIndex, dummy = None):
         self.layer = layerNumber
         self.nodes = []
-        self.populate_layer(numNodes, startIndex)
+        self.populate_layer(numNodes, startIndex, dummy)
 
 
-    def populate_layer(self, numNodes, startIndex):
+    def populate_layer(self, numNodes, startIndex, dummy = None):
         """ populate the nodes array """
-        for i in range(startIndex, numNodes + startIndex):
-            self.nodes.append(i)
+        # quick modification to handle dummy layer connection generation
+        if dummy:
+            for _ in range(numNodes):
+                self.nodes.append(startIndex)
+        else:
+            for i in range(startIndex, numNodes + startIndex):
+                self.nodes.append(i)
 
 
 # NOTE: need to know edges and their weights: which nodes are connected and to what degree
 class Node:
-    """ each node/unit in the neural network"""
+    """ each node/unit in the neural network
+        ref: Russell, Norvig p.728
+    """
 
     def __init__(self, index, layer, inputs):
         # init with unique identifiers
@@ -126,7 +133,8 @@ class NeuralNetwork:
         self.adj_matrix = []
         self.layers = []    #will store Layer class objects
         self.generate_adj_matrix(networkParamsVector)
-
+        self.nodes = []     #will store Node class objects
+        # self.generate_nodes()
 
     def count_nodes(self,nodesVector):
         """ calculates the total number of nodes"""
@@ -182,21 +190,46 @@ class NeuralNetwork:
             - mark edges and their weights between nodes in self.adj_matrix
             IN: Layer class objects consecutive/adjacent in the neural network
         """
-        # print("\ngenerating connections ...")
-        # print(layer_i.nodes, layer_j.nodes)
-        # print(self.adj_matrix[0])
+        print("\ngenerating connections")
+        print("i_nodes:", layer_i.nodes)
+        print("j_nodes:", layer_j.nodes)
+
         i_nodes = layer_i.nodes
         j_nodes = layer_j.nodes
         numConnections = len(i_nodes) * len(j_nodes)
-        randomWeights = self.generate_weights(numConnections)
+        print("numConnections:", numConnections)
         # build those connections
         for i in range(len(i_nodes)):
+            randomWeights = self.generate_weights(numConnections)
+            # print("weights vector:", randomWeights)
             node_from = i_nodes[i]
             for j in range(len(j_nodes)):
                 node_to = j_nodes[j]
                 thisWeight = randomWeights[j]
                 self.adj_matrix[node_from][node_to] = thisWeight
+        print(self.adj_matrix)
 
+    def add_dummy_node(self, networkParams):
+        """ append the dummy node as a layer class object to adj. matrix,
+        add connections from it to all nodes """
+        # pass
+        # add new entries in adjacency matrix
+        print("adding dummy node")
+        self.adj_matrix.append([])
+        for _ in range(self.numNodes):
+            self.adj_matrix[-1].append(0)
+
+        print("new matrix:", self.adj_matrix)
+        # generate as a layer
+        dummyLayer = Layer(len(networkParams), self.numNodes, self.numNodes,1)
+        self.layers.append(dummyLayer)
+        print(dummyLayer.layer, dummyLayer.nodes)
+        print("\n\nGENERATING CONNECTIONS FROM DUMMY LAYER", "~" *70)
+        # generate connections between the dummy layer and all other layers
+        for layer in range(len(networkParams)):
+            self.generate_connections(self.layers[-1], self.layers[layer])
+        print("~" *100)
+        # self.adj_matrix.insert(0, dummyLayer)
 
     def generate_adj_matrix(self, networkParams):
         """ generates the network graph, as an adjacency matrix
@@ -209,43 +242,47 @@ class NeuralNetwork:
             for _ in range(self.numNodes):
                 self.adj_matrix[i].append(0)
 
-
-
         # build up layers to know which nodes connect to which
         startIndex = 0
         print("params:", networkParams)
         for layer in range(len(networkParams)):
-            print(layer, startIndex)
+            # print(layer, startIndex)
             thisLayer = Layer(layer, networkParams[layer], startIndex)
             self.layers.append(thisLayer)
             startIndex += networkParams[layer]
-            print("thisLayer:", thisLayer.nodes)
+            # print("thisLayer:", thisLayer.nodes)
 
         #build up the adjacency matrix:
         for layer in range(len(networkParams)-1):
             self.generate_connections(self.layers[layer], self.layers[layer+1])
 
+        # handle dummy node,
+        # NOTE: dummy layer effectively overwrites output layer's adj. matrix
+        # entry; may be alright since those are all 0's
+        self.add_dummy_node(networkParams)
 
+        # print("\n layers: ", self.layers)
+        print("printing layers")
+        for i in range(len(self.layers)):
+            print(self.layers[i].nodes)
 
-        # for i in range(len(self.layers)):
-        #     print(self.layers[i].nodes)
-
-        # for layer in range(len(networkParams)-1):
-        #     # self.generate_connections(networkParams[layer],
-        #                                     networkParams[layer+1])
-        print("final adjacency matrix with length {}: \n".format(len(self.adj_matrix)), self.adj_matrix)
+        print("\n final adjacency matrix with length {}: \n".format(len(self.adj_matrix)), self.adj_matrix)
+        print("\n dummy layer: ", self.adj_matrix[-1])
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    def forward_propagate(self, input):
-        """ forward propagate through the network. on some input"""
+    def forward_propagate(self):
+        """ forward propagate through the network
+            ref: Norvig/Russell p.728."""
         pass
 
 
+
     def back_propagation_learning(self,examples):
-        """ back propagate to learn the weights"""
+        """ back propagate to learn the weights
+            ref: Norvig/Russell p.734. """
         pass
 
 
